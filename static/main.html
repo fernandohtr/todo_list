@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ToDo List</title>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+  </head>
+  <body>
+    <h1>Todo List</h1>
+    {% if not list_items %}
+      <p>There's no item in the list</p>
+    {% else %}
+      <ul>
+      {% for item in list_items %}
+        <li>{{ item }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+    <form class="textbox" action="" method="post">
+      <h2>New tasks</h2>
+        <input type="text" name="task" placeholder="Insert a new task">
+        <button type="submit" name="submit">Submit</button>
+    </form>
+  </body>
+</html>

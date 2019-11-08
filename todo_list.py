@@ -17,8 +17,7 @@ class TodoResource(object):
 
     def on_post(self, request, response):
         data_serialize = request.stream.read()
-        data_byte = parse_qs(data_serialize)[b'task'][0]
-        data = data_byte.decode('utf-8')
+        data= parse_qs(data_serialize.decode('utf-8'))['task'][0]
         self._save_info(data)
         self.on_get(request, response)
 

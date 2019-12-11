@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ToDo List</title>
+    <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+  <body>
+
+    <h2>Todo <b>List</b></h2>
+    <div>
+      <ul>
+      {% if not list_items %}
+        <li>There's no item in the list</li>
+      {% else %}
+        {% for item in list_items %}
+          <li>{{ item }}
+            <form action="/delete" method="post" style="display: inline-block;">
+              <input type="hidden" name="id" value="{{ loop.index }}" />
+              <button type="submit" class="btn"><i class="fa fa-trash"></i></button>
+            </form>
+          </li>
+        {% endfor %}
+      {% endif %}
+      </ul>
+    </div>
+       
+    <form class="textbox" action="/create" method="post">
+      <h2>New tasks</h2>
+        <input type="text" name="task" placeholder="Insert a new task">
+        <button type="submit" name="submit">Submit</button>
+    </form>
+  </body>
+</html>

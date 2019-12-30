@@ -23,9 +23,12 @@ class CreateItem(object):
 
     def on_post(self, request, response):
         data_serialize = request.stream.read()
-        data = parse_qs(data_serialize.decode('utf-8'))['task'][0]
-        self._save_info(data)
-        raise falcon.HTTPFound('/')
+        try:
+            task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
+            self._save_info(task)
+            raise falcon.HTTPFound('/')
+        except Exception:
+            raise falcon.HTTPFound('/')
 
     def _save_info(self, read_str):
         with open(os.path.abspath('config/save_list.txt'), 'a') as file:
@@ -36,8 +39,9 @@ class DeleteItem(object):
 
     def on_post(self, request, response):
         data_serialize = request.stream.read()
-        data = parse_qs(data_serialize.decode('utf-8'))['id'][0]
-        index = int(data) - 1
+        data_id = parse_qs(data_serialize.decode('utf-8'))['id'][0]
+        index = int(data_id) - 1
+
         deleted_item = self._delete_items(index)
         raise falcon.HTTPFound('/')
 
@@ -54,9 +58,38 @@ class DeleteItem(object):
                 pass
             return deleted_item
 
+    def _save_info(self, read_str, index):
+        with open(os.path.abspath('config/save_list.txt'), 'a') as file:
+            return file.write(read_str + '\n')
+
+
+class EditItem(object):
+
+    def on_post(self, request, response):
+        data_serialize = request.stream.read()
+        data_id = int(parse_qs(data_serialize.decode('utf-8'))['id'][0])
+        task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
+        index = data_id - 1
+        self._update_info(task, index)
+        raise falcon.HTTPFound('/')
+
+    def _update_info(self, task, index):
+        with open(os.path.abspath('config/save_list.txt'), 'r') as file:
+            items = file.readlines()
+
+        with open(os.path.abspath('config/save_list.txt'), 'w') as file:
+            items.pop(index)
+            items.insert(index, task + '\n')
+            try:
+                for item in items:
+                    file.write(item)
+            except Exception:
+                pass
+
 
 app = falcon.API()
 
 app.add_route('/', ReadMainPage())
 app.add_route('/create', CreateItem())
 app.add_route('/delete', DeleteItem())
+app.add_route('/edit', EditItem())

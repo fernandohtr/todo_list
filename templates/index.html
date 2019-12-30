@@ -22,9 +22,8 @@
       {% else %}
         {% for item in list_items %}
           <li>
-            <form action="/edit" method="post" style="display: inline-block;">
+            <form action="/edit/{{ loop.index }}" method="post" style="display: inline-block;">
               <input type="text" name="task" value="{{ item }}" required />
-              <input type="hidden" name="id" value="{{ loop.index }}" />
               <button type="submit">Edit</button>
             </form>
 

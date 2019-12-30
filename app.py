@@ -65,9 +65,9 @@ class DeleteItem(object):
 
 class EditItem(object):
 
-    def on_post(self, request, response):
+    def on_post(self, request, response, **kwargs):
         data_serialize = request.stream.read()
-        data_id = int(parse_qs(data_serialize.decode('utf-8'))['id'][0])
+        data_id = kwargs['id']
         task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
         index = data_id - 1
         self._update_info(task, index)
@@ -92,4 +92,4 @@ app = falcon.API()
 app.add_route('/', ReadMainPage())
 app.add_route('/create', CreateItem())
 app.add_route('/delete', DeleteItem())
-app.add_route('/edit', EditItem())
+app.add_route('/edit/{id:int()}', EditItem())

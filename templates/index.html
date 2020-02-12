@@ -22,13 +22,13 @@
       {% else %}
         {% for item in list_items %}
           <li>
-            <form action="/edit/{{ loop.index }}" method="post" style="display: inline-block;">
-              <input type="text" name="task" value="{{ item }}" required />
+            <form action="/edit/{{ item[0] }}" method="post" style="display: inline-block;">
+              <input type="text" name="task" value="{{ item[1] }}" required />
               <button type="submit">Edit</button>
             </form>
 
             <form action="/delete" method="post" style="display: inline-block;">
-              <input type="hidden" name="id" value="{{ loop.index }}" />
+              <input type="hidden" name="id" value="{{ item[0] }}" />
               <button type="submit">Delete</button>
             </form>
           </li>

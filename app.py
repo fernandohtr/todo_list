@@ -1,10 +1,25 @@
 import falcon
 import os
 import json
+import psycopg2
 
 from urllib.parse import parse_qs
 
 from config.utils import render
+
+
+def connect_to_db():
+    try:
+        connection = psycopg2.connect(
+            user = 'postgres',
+            password = 'senha',
+            host = '127.0.0.1',
+            port = '5432',
+            database = 'todo',
+        )
+        return connection
+    except:
+        print('Can\'t connect to database')
 
 
 class ReadMainPage(object):
@@ -12,11 +27,17 @@ class ReadMainPage(object):
     def on_get(self, request, response):
         response.status = falcon.HTTP_200
         response.content_type = 'text/html; charset=utf-8'
-        response.body = render('index.html', list_items=self._list_items())
 
-    def _list_items(self):
-        with open(os.path.abspath('config/save_list.txt')) as file:
-            return file.readlines()
+        connection = connect_to_db()
+        cursor = connection.cursor()
+
+        cursor.execute('SELECT id, task FROM todo')
+        list_items = cursor.fetchall()
+
+        response.body = render('index.html', list_items=list_items)
+
+        cursor.close()
+        connection.close()
 
 
 class CreateItem(object):
@@ -25,14 +46,19 @@ class CreateItem(object):
         data_serialize = request.stream.read()
         try:
             task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
-            self._save_info(task)
+
+            connection = connect_to_db()
+            cursor = connection.cursor()
+
+            cursor.execute('INSERT INTO todo (task) VALUES (%s)', (task,))
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
             raise falcon.HTTPFound('/')
         except Exception:
             raise falcon.HTTPFound('/')
-
-    def _save_info(self, read_str):
-        with open(os.path.abspath('config/save_list.txt'), 'a') as file:
-            return file.write(read_str + '\n')
 
 
 class DeleteItem(object):
@@ -40,27 +66,18 @@ class DeleteItem(object):
     def on_post(self, request, response):
         data_serialize = request.stream.read()
         data_id = parse_qs(data_serialize.decode('utf-8'))['id'][0]
-        index = int(data_id) - 1
+        index = int(data_id)
 
-        deleted_item = self._delete_items(index)
+        connection = connect_to_db()
+        cursor = connection.cursor()
+
+        cursor.execute('DELETE FROM todo WHERE "id" = %s', (index,))
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+
         raise falcon.HTTPFound('/')
-
-    def _delete_items(self, index):
-        with open(os.path.abspath('config/save_list.txt'), 'r') as file:
-            items = file.readlines()
-
-        with open(os.path.abspath('config/save_list.txt'), 'w') as file:
-            deleted_item = items.pop(index)
-            try:
-                for item in items:
-                    file.write(item)
-            except Exception:
-                pass
-            return deleted_item
-
-    def _save_info(self, read_str, index):
-        with open(os.path.abspath('config/save_list.txt'), 'a') as file:
-            return file.write(read_str + '\n')
 
 
 class EditItem(object):
@@ -69,22 +86,19 @@ class EditItem(object):
         data_serialize = request.stream.read()
         data_id = kwargs['id']
         task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
-        index = data_id - 1
-        self._update_info(task, index)
+        index = data_id
+
+        connection = connect_to_db()
+        cursor = connection.cursor()
+
+        cursor.execute('UPDATE todo SET task = %s WHERE id = %s', (task, index))
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+
+
         raise falcon.HTTPFound('/')
-
-    def _update_info(self, task, index):
-        with open(os.path.abspath('config/save_list.txt'), 'r') as file:
-            items = file.readlines()
-
-        with open(os.path.abspath('config/save_list.txt'), 'w') as file:
-            items.pop(index)
-            items.insert(index, task + '\n')
-            try:
-                for item in items:
-                    file.write(item)
-            except Exception:
-                pass
 
 
 app = falcon.API()

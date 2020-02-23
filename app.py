@@ -1,5 +1,4 @@
 import falcon
-import os
 
 from psycopg2.errors import UndefinedTable
 from urllib.parse import parse_qs

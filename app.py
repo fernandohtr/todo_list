@@ -59,7 +59,7 @@ class DeleteItem(object):
         data_id = parse_qs(data_serialize.decode('utf-8'))['id'][0]
         index = int(data_id)
 
-        with connection() as conn:
+        with connection as conn:
             with conn.cursor() as cursor:
 
                 cursor.execute('DELETE FROM todo WHERE "id" = %s', (index,))
@@ -76,7 +76,7 @@ class EditItem(object):
         task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
         index = data_id
 
-        with connection() as conn:
+        with connection as conn:
             with conn.cursor() as cursor:
 
                 cursor.execute('UPDATE todo SET task = %s WHERE id = %s', (task, index))

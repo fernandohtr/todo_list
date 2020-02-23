@@ -1,24 +1,11 @@
 import falcon
 import os
-import psycopg2
 
+from psycopg2.errors import UndefinedTable
 from urllib.parse import parse_qs
 
 from config.utils import render
-
-
-def connect_to_db():
-    try:
-        connection = psycopg2.connect(
-            user='postgres',
-            password='senha',
-            host='127.0.0.1',
-            port='5432',
-            database='todo',
-        )
-        return connection
-    except psycopg2.DatabaseError as e:
-        print(f'Can\'t connect to database: {e}')
+from config.connect_db import connection
 
 
 class ReadMainPage(object):
@@ -27,13 +14,24 @@ class ReadMainPage(object):
         response.status = falcon.HTTP_200
         response.content_type = 'text/html; charset=utf-8'
 
-        with connect_to_db() as connection:
-            with connection.cursor() as cursor:
+        try:
+            with connection as conn:
+                with conn.cursor() as cursor:
 
-                cursor.execute('SELECT id, task FROM todo')
-                list_items = cursor.fetchall()
+                    cursor.execute('SELECT id, task FROM todo')
+                    list_items = cursor.fetchall()
 
-                response.body = render('index.html', list_items=list_items)
+                    response.body = render('index.html', list_items=list_items)
+
+        except UndefinedTable:
+            with connection as conn:
+                with conn.cursor() as cursor:
+
+                    cursor.execute('CREATE TABLE todo (id serial PRIMARY KEY, task text)')
+                    cursor.execute('SELECT id, task FROM todo')
+                    list_items = cursor.fetchall()
+
+                    response.body = render('index.html', list_items=list_items)
 
 
 class CreateItem(object):
@@ -43,11 +41,11 @@ class CreateItem(object):
         try:
             task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
 
-            with connect_to_db() as connection:
-                with connection.cursor() as cursor:
+            with connection as conn:
+                with conn.cursor() as cursor:
 
                     cursor.execute('INSERT INTO todo (task) VALUES (%s)', (task,))
-                    connection.commit()
+                    conn.commit()
 
                     raise falcon.HTTPFound('/')
         except Exception:
@@ -61,11 +59,11 @@ class DeleteItem(object):
         data_id = parse_qs(data_serialize.decode('utf-8'))['id'][0]
         index = int(data_id)
 
-        with connect_to_db() as connection:
-            with connection.cursor() as cursor:
+        with connection() as conn:
+            with conn.cursor() as cursor:
 
                 cursor.execute('DELETE FROM todo WHERE "id" = %s', (index,))
-                connection.commit()
+                conn.commit()
 
         raise falcon.HTTPFound('/')
 
@@ -78,11 +76,11 @@ class EditItem(object):
         task = parse_qs(data_serialize.decode('utf-8'))['task'][0]
         index = data_id
 
-        with connect_to_db() as connection:
-            with connection.cursor() as cursor:
+        with connection() as conn:
+            with conn.cursor() as cursor:
 
                 cursor.execute('UPDATE todo SET task = %s WHERE id = %s', (task, index))
-                connection.commit()
+                conn.commit()
 
         raise falcon.HTTPFound('/')
 
